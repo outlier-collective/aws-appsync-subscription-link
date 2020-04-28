@@ -250,6 +250,10 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
       })
     } catch (err) {
       const { message = '' } = err
+      if (!observer) {
+        console.warn('Null observer, returning')
+        return
+      }
       observer.error({
         errors: [
           {
@@ -603,7 +607,10 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
         subscriptionFailedCallback,
         subscriptionState,
       })
-
+      if (!observer) {
+        console.warn('Null observer, returning')
+        return
+      }
       observer.error({
         errors: [
           {
@@ -622,10 +629,14 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
 
   private _timeoutDisconnect() {
     this.subscriptionObserverMap.forEach(({ observer }) => {
-      observer.error({
-        errors: [{ ...new GraphQLError(`Timeout disconnect`) }],
-      })
-      observer.complete()
+      if (observer) {
+        observer.error({
+          errors: [{ ...new GraphQLError(`Timeout disconnect`) }],
+        })
+        observer.complete()
+      } else {
+        console.warn('Null observer, returning')
+      }
     })
     this.subscriptionObserverMap = new Map()
     if (this.awsRealTimeSocket) {
