@@ -13,11 +13,6 @@
     "type": "git",
     "url": "https://github.com/awslabs/aws-mobile-appsync-sdk-js.git"
   },
-  "scripts": {
-    "prepare": "tsc && cp -r src/vendor lib/vendor",
-    "test": "jest --coverage --coverageReporters=text",
-    "test-watch": "jest --watch"
-  },
   "dependencies": {
     "apollo-link": "^1.2.3",
     "apollo-link-context": "^1.0.9",
