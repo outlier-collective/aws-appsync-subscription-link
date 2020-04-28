@@ -480,37 +480,41 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
       await (() => {
         return new Promise((res, rej) => {
           let ackOk = false
-          this.awsRealTimeSocket.onerror = (error) => {
-            logger(`WebSocket closed ${JSON.stringify(error)}`)
-          }
-          this.awsRealTimeSocket.onclose = (event) => {
-            logger(`WebSocket closed ${event.reason}`)
-            rej(new Error(JSON.stringify(event)))
-          }
-
-          this.awsRealTimeSocket.onmessage = (message: MessageEvent) => {
-            logger(`subscription message from AWS AppSyncRealTime: ${message.data} `)
-            const data = JSON.parse(message.data)
-            const { type, payload: { connectionTimeoutMs = DEFAULT_KEEP_ALIVE_TIMEOUT } = {} } = data
-            if (type === MESSAGE_TYPES.GQL_CONNECTION_ACK) {
-              ackOk = true
-              this.keepAliveTimeout = connectionTimeoutMs
-              this.awsRealTimeSocket.onmessage = this._handleIncomingSubscriptionMessage.bind(this)
-              res('Cool, connected to AWS AppSyncRealTime')
-              return
+          if (this.awsRealTimeSocket) {
+            this.awsRealTimeSocket.onerror = (error) => {
+              logger(`WebSocket closed ${JSON.stringify(error)}`)
+            }
+            this.awsRealTimeSocket.onclose = (event) => {
+              logger(`WebSocket closed ${event.reason}`)
+              rej(new Error(JSON.stringify(event)))
             }
 
-            if (type === MESSAGE_TYPES.GQL_CONNECTION_ERROR) {
-              const { payload: { errors: [{ errorType = '', errorCode = 0 } = {}] = [] } = {} } = data
+            this.awsRealTimeSocket.onmessage = (message: MessageEvent) => {
+              logger(`subscription message from AWS AppSyncRealTime: ${message.data} `)
+              const data = JSON.parse(message.data)
+              const { type, payload: { connectionTimeoutMs = DEFAULT_KEEP_ALIVE_TIMEOUT } = {} } = data
+              if (type === MESSAGE_TYPES.GQL_CONNECTION_ACK) {
+                ackOk = true
+                this.keepAliveTimeout = connectionTimeoutMs
+                this.awsRealTimeSocket.onmessage = this._handleIncomingSubscriptionMessage.bind(this)
+                res('Cool, connected to AWS AppSyncRealTime')
+                return
+              }
 
-              rej({ errorType, errorCode })
+              if (type === MESSAGE_TYPES.GQL_CONNECTION_ERROR) {
+                const { payload: { errors: [{ errorType = '', errorCode = 0 } = {}] = [] } = {} } = data
+
+                rej({ errorType, errorCode })
+              }
             }
-          }
 
-          const gqlInit = {
-            type: MESSAGE_TYPES.GQL_CONNECTION_INIT,
+            const gqlInit = {
+              type: MESSAGE_TYPES.GQL_CONNECTION_INIT,
+            }
+            this.awsRealTimeSocket.send(JSON.stringify(gqlInit))
+          } else {
+            console.warn('Null awsRealTimeSocket caught')
           }
-          this.awsRealTimeSocket.send(JSON.stringify(gqlInit))
 
           function checkAckOk() {
             if (!ackOk) {
