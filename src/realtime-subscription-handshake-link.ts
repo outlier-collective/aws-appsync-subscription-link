@@ -656,6 +656,11 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
   }
 
   private _timeoutStartSubscriptionAck(subscriptionId) {
+    if (!this.subscriptionObserverMap.get(subscriptionId)) {
+      console.log(`subscriptionObserverMap for ${subscriptionId} is empty`, JSON.stringify(this.subscriptionObserverMap))
+      return
+    }
+
     const { observer, query, variables } = this.subscriptionObserverMap.get(subscriptionId)
     this.subscriptionObserverMap.set(subscriptionId, {
       observer,
