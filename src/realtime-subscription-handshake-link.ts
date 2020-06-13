@@ -276,6 +276,11 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
     // For example if unsubscribe gets invoked before it finishes WebSocket handshake or START_ACK
     // subscriptionFailedCallback subscriptionReadyCallback are used to synchonized that
 
+    if (!this.subscriptionObserverMap.get(subscriptionId)) {
+      console.log(`subscriptionObserverMap for ${subscriptionId} is empty`, JSON.stringify(this.subscriptionObserverMap))
+      return
+    }
+
     const { subscriptionFailedCallback, subscriptionReadyCallback } = this.subscriptionObserverMap.get(subscriptionId)
 
     // This must be done before sending the message in order to be listening immediately
