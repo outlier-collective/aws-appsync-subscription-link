@@ -494,22 +494,24 @@ export class AppSyncRealTimeSubscriptionHandshakeLink extends ApolloLink {
               rej(new Error(JSON.stringify(event)))
             }
 
-            this.awsRealTimeSocket.onmessage = (message: MessageEvent) => {
-              logger(`subscription message from AWS AppSyncRealTime: ${message.data} `)
-              const data = JSON.parse(message.data)
-              const { type, payload: { connectionTimeoutMs = DEFAULT_KEEP_ALIVE_TIMEOUT } = {} } = data
-              if (type === MESSAGE_TYPES.GQL_CONNECTION_ACK) {
-                ackOk = true
-                this.keepAliveTimeout = connectionTimeoutMs
-                this.awsRealTimeSocket.onmessage = this._handleIncomingSubscriptionMessage.bind(this)
-                res('Cool, connected to AWS AppSyncRealTime')
-                return
-              }
+            if (this.awsRealTimeSocket) {
+              this.awsRealTimeSocket.onmessage = (message: MessageEvent) => {
+                logger(`subscription message from AWS AppSyncRealTime: ${message.data} `)
+                const data = JSON.parse(message.data)
+                const { type, payload: { connectionTimeoutMs = DEFAULT_KEEP_ALIVE_TIMEOUT } = {} } = data
+                if (type === MESSAGE_TYPES.GQL_CONNECTION_ACK && this.awsRealTimeSocket) {
+                  ackOk = true
+                  this.keepAliveTimeout = connectionTimeoutMs
+                  this.awsRealTimeSocket.onmessage = this._handleIncomingSubscriptionMessage.bind(this)
+                  res('Cool, connected to AWS AppSyncRealTime')
+                  return
+                }
 
-              if (type === MESSAGE_TYPES.GQL_CONNECTION_ERROR) {
-                const { payload: { errors: [{ errorType = '', errorCode = 0 } = {}] = [] } = {} } = data
+                if (type === MESSAGE_TYPES.GQL_CONNECTION_ERROR) {
+                  const { payload: { errors: [{ errorType = '', errorCode = 0 } = {}] = [] } = {} } = data
 
-                rej({ errorType, errorCode })
+                  rej({ errorType, errorCode })
+                }
               }
             }
 
